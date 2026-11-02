@@ -1,0 +1,8 @@
+{
+  "name": "Quality Dedupe",
+  "author": "Codexophile",
+  "description": "Keeps only the highest-quality unread release per base title.",
+  "version": "1.0.0",
+  "entrypoint": "QualityDedupe",
+  "type": "user"
+}
