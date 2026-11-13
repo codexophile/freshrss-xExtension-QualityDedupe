@@ -8,7 +8,8 @@ $selectedFeeds = $this->getSelectedFeedIds();
 
 	<p>
 		Tick whole categories, individual feeds, or both. Nothing ticked means
-		the extension does nothing.
+		the extension does nothing. Duplicate unread items are identified by
+		their feed and title; the feed item URL is not used.
 	</p>
 
 	<?php foreach ($this->getCategoriesWithFeeds() as $category) { ?>

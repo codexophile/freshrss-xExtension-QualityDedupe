@@ -1,7 +1,7 @@
 {
   "name": "Quality Dedupe",
   "author": "Codexophile",
-  "description": "Keeps only the highest-quality unread release per base title.",
+  "description": "Keeps only the highest-quality unread release per feed item title.",
   "version": "1.0.0",
   "entrypoint": "QualityDedupe",
   "type": "user"

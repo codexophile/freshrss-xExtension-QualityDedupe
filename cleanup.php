@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 /**
  * One-time cleanup: marks lower-quality duplicate unread items as read.
- * Items are grouped by (feed, link). In each group the highest-scoring
- * item is kept, and ties go to the item that arrived first. Kept items
+ * Items are grouped by (feed, title). In each group the highest-scoring
+ * item is kept, and ties go to the item that arrived first. The extension
+ * marker is ignored when comparing titles. Kept items
  * in duplicate groups get the ✔ title prefix. Nothing is deleted.
  *
  * Usage (dry run by default):
@@ -43,6 +44,19 @@ function score(string $title): int
 }
 
 /**
+ * Removes the extension marker before comparing feed item titles.
+ *
+ * @param string $title Feed item title.
+ * @return string Title used for duplicate comparisons.
+ */
+function comparisonTitle(string $title): string
+{
+	return str_starts_with($title, MARKER)
+		? substr($title, strlen(MARKER))
+		: $title;
+}
+
+/**
  * Entry point. Parses CLI options, finds duplicate groups, and either
  * prints the planned changes (dry run) or applies them in a transaction.
  *
@@ -71,19 +85,18 @@ function main(): int
 	$pdo = new PDO("sqlite:{$dbPath}");
 	$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-	// Unread items whose (feed, link) appears more than once.
-	$sql = 'SELECT e.id, e.id_feed, e.link, e.title FROM entry e '
-		. 'WHERE e.is_read = 0 AND e.link != \'\' AND EXISTS ('
-		. 'SELECT 1 FROM entry o WHERE o.id_feed = e.id_feed AND o.link = e.link '
-		. 'AND o.is_read = 0 AND o.id != e.id) ORDER BY e.id_feed, e.link, e.id';
+	// Unread items whose (feed, title) appears more than once.
+	$sql = 'SELECT e.id, e.id_feed, e.title FROM entry e '
+		. 'WHERE e.is_read = 0 AND e.title != \'\' ORDER BY e.id_feed, e.id';
 	$groups = [];
 	foreach ($pdo->query($sql, PDO::FETCH_ASSOC) as $row) {
 		if ($feedFilter !== [] && !in_array((int) $row['id_feed'], $feedFilter, true)) {
 			continue;
 		}
-		$groups[$row['id_feed'] . '|' . $row['link']][] = $row;
+		$groups[$row['id_feed'] . '|' . comparisonTitle($row['title'])][] = $row;
 	}
 
+	$groups = array_filter($groups, static fn (array $rows): bool => count($rows) > 1);
 	$markRead = [];
 	$keepers = [];
 	foreach ($groups as $rows) {
